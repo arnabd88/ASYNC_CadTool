@@ -1,0 +1,26 @@
+
+Data structure for storing the Transitions and Places correspondence
+
+Dict1:
+---------
+keys                 Values
+~~~~~               ~~~~~~~~
+Transitions   ->   {Places or Places-Transition pairs}
+
+Dict2:
+---------
+Keys
+~~~~~
+Places       ->    {Connecting transitions]
+
+
+
+
+1. Read-in the lpn
+2. Get the inputs and outputs in serial order <I/0>
+3. Find the point saying '.graph'. That is where the STG begins
+4. We are bulding untimed versions, hence strip off the timing bounds( identified by first '#')
+5. Split using space.
+6. The first argument is going to be the enabled transition
+7. Identify if the following arguments are transitions or implied places.
+8. 
