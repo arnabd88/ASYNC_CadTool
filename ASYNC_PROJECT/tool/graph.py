@@ -135,6 +135,9 @@ class  graph:
 		print "Self_T: ", self.T
 		return Te
 
+
+		
+
 	
 
 	def find_SG(self):
@@ -151,7 +154,11 @@ class  graph:
 		lambdaS[M] = s 
 		done = 0
 		while(done == 0):
+			done = 1
 			t = Te[0]
 			if(len(Te)>1):
 				stack.append([M,s,Te[1:]])
-		
+			print "Dummy :", set(self.TransitionPresets[t]) | set(M)
+			print "Dummy :", self.TransitionPresets[t]
+			print "Dummy :", self.TransPlace[t]
+	   	
