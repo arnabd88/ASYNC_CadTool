@@ -1,0 +1,35 @@
+
+Description of the graph class dataStructures for recollection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+self.
+  1. inputs     -> List of inputs
+  2. outputs    -> List of outputs
+  3. internals  -> List of internals
+  4. Aspec      -> set of I U O
+  5. init_state -> inital state [I/O]
+  6. P          -> Current Marking Dictionary
+  					P1 : 0
+  					P2 : 0
+  					P3 : 1
+  					P4 : 0
+  					P5 : 1
+  7. PlaceTrans ->  Dictionary of Places and its postSet
+  					P1 : t1, t2
+  					P2 : t3, t2
+  					P3 : t4, t7
+  					P4 : t2, t1
+  					P5 : t1, t3
+  8. TransPlace ->  Dictionary of Transitions and its postSet
+  					t1 : P1, P3
+  					t2 : P2, P3
+  					t3 : P1, P4
+  					t4 : P5, P2
+  					t7 : P4, P3
+  9. TransitionPresets -> Dictionary of Transitions and its preset
+  					t1 : p4, p7
+  					t2 : p1, p7
+  					t3 : p1, p2
+  					t4 : p3, p1
+  					t5 : p5, p7
+ 10. markList    -> Marking
+ 11. labelS      -> dictionary corresponding to lambdaS(M)=s
