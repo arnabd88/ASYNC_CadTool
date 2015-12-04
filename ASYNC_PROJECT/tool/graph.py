@@ -22,6 +22,9 @@ class  graph:
 		print "PlaceTrans============="
 		for i,v in self.PlaceTrans.iteritems():
 			print i,v
+		print "\n\nTransitionPresets========"
+		for i,v in self.TransitionPresets.iteritems():
+			print i, v
 
 	def CreateDSlpn(self, lpn):
 		print "============================="
@@ -38,7 +41,7 @@ class  graph:
 		markList = []
 		graphStart = 0;
 		CommentList = [ i.split('#')[1]  for i in lpn if('#' in i)]
-		self.init_state = [i.split( )[1][1:].split(']')[0] for i in CommentList if('init_state' in i)]
+		state = [i.split( )[1][1:].split(']')[0] for i in CommentList if('init_state' in i)]
 			##	self.init_state = line.split( )[1][1:].split(']')[0]
 		self.lpn = [ i.split('#')[0]  for i in lpn]
 		for line in self.lpn:
@@ -87,15 +90,68 @@ class  graph:
 					for i in range(1,len(transPlaceList)):
 						self.PlaceTrans[transPlaceList[0]].append(transPlaceList[i])
 		self.Aspec = set(self.inputs) | set(self.outputs) | set(self.internals)
-		self.T = self.TransPlace.keys()
+		##self.T = self.TransPlace.keys()
 		##'Places to postset transitions'
 		for i in self.PlaceTrans.keys():
 			if(i in markList) :
 		   		self.P[i] = 1 ;
 			else :
 		   		self.P[i] = 0 ;
+		##Making Transition and Presets
+		self.TransitionPresets = dict([])
+		for trans in self.TransPlace.keys():
+			self.TransitionPresets[trans] = []
+			for place, tx in self.PlaceTrans.iteritems():
+				if(trans in tx):
+					self.TransitionPresets[trans].append(place)
+		all_signals = self.inputs+self.outputs+self.internals
+		self.init_state = dict([])
+		for i in range(0,len(all_signals)):
+			self.init_state[all_signals[i]] = state[0][i] 
+		#####---------------------------
 		self.display()
+
+	def getMarking(self):
+		self.M = []
+		for places, val in self.P.iteritems():
+			if(val == 1):
+				self.M.append(places);
+		print "Marking: ", self.M
+		return self.M
+
+	def getEnabledTransitions(self):
+		Te = []
+		for trans,places in self.TransitionPresets.iteritems():
+			notEnabled = 0
+			for preset in places:
+				if(self.P[preset]==0):
+					notEnabled = 1
+			if(notEnabled==0):
+				Te.append(trans)
+				self.T[trans] = 1
+			else :
+				self.T[trans] = 0
+		print "Enabled Transitions: ", Te
+		print "Self_T: ", self.T
+		return Te
 
 	
 
-
+	def find_SG(self):
+		print "Find_SG"
+		self.M0 = self.getMarking()
+		lambdaS = dict([])
+		M = tuple(self.M0) 
+		s = self.init_state 
+		Te = self.getEnabledTransitions()
+		stack = []
+		if(len(Te)==0):
+			return ['STG_DEADLOCK:Incorrect_Spec']
+		SET = [M]
+		lambdaS[M] = s 
+		done = 0
+		while(done == 0):
+			t = Te[0]
+			if(len(Te)>1):
+				stack.append([M,s,Te[1:]])
+		

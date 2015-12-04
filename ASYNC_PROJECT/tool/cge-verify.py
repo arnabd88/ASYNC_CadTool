@@ -21,4 +21,6 @@ graph_name = sys.argv[1].split('.')
 print graph_name
 SG = graph.graph(graph_name[0])
 SG.CreateDSlpn(lpn)
+getSG = SG.find_SG()
+print "Message :", getSG
 #SG.disPlay()
