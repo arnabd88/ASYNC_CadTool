@@ -145,7 +145,6 @@ class  graph:
 			else :
 				self.T[trans] = 0
 		print "Enabled Transitions: ", Te
-		print "Self_T: ", self.T
 		return Te
 		
 	def updatePlaces(self, M):
@@ -154,14 +153,7 @@ class  graph:
 			self.P[place] = 0 
 			if(place in mark):
 				self.P[place] = 1
-				
-				
-		
-
-
-		
-
-	
+					
 
 	def find_SG(self):
 		print "Find_SG"
@@ -183,13 +175,9 @@ class  graph:
 			t = copy.deepcopy(Te[0])
 			if(len(Te)>1):
 				stack.append([M,s,Te[1:]])
-			print "Dummy :", set(self.TransitionPresets[t]) | set(M)
-			print "Dummy :", self.TransitionPresets[t]
-			print "Dummy :", self.TransPlace[t]
 			if( len(((set(M) - set(self.TransitionPresets[t])) & set(self.TransPlace[t]))) != 0):
 				return ['STG is not safe']
 			Mi = tuple((set(M) - set(self.TransitionPresets[t]))   |  set(self.TransPlace[t]))
-			print "Mi :" , Mi
 			si = copy.deepcopy(s)
 			if(self.transExcite[t][0] == 'R'):
 				si[self.transExcite[t][1]] = '1'
@@ -198,17 +186,12 @@ class  graph:
 			##delta = set([M, t, Mi])
 			delta1 = [M, t, Mi]
 			delta.append(delta1)
-			print "Delta: ", delta
 			if(Mi not in SET):
 				SET.append(Mi)
 				lambdaS[Mi] = copy.deepcopy(si)
-				print "Lamda :", lambdaS
 				M = copy.deepcopy(Mi)
 				s = copy.deepcopy(si)
-				print "\n\n\n\\"
-				print "Before Update :", self.P, "\n\n\n"
 				self.updatePlaces(M)
-				print "Updated Places: ", self.P
 				Te = self.getEnabledTransitions()
 				if(len(Te)==0):
 					return ['STG_DEADLOCK:Incorrect_Spec']
@@ -223,7 +206,7 @@ class  graph:
 				else:
 					done = 1
 				
-		result = ["Final SG is in this list", SET, delta, lambdaS]
+		result = ["Final SG is in this list", SET, delta, lambdaS, self.inputs, self.outputs, self.internals]
 		return result
 			
 			
