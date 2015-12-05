@@ -161,7 +161,9 @@ class  graph:
 		lambdaS = dict([])
 		M = tuple(self.M0) 
 		s = copy.deepcopy(self.init_state)
+		print "Init_state: ", self.init_state
 		Te = self.getEnabledTransitions()
+		print "Init_state: ", self.init_state
 		stack = []
 		if(len(Te)==0):
 			return ['STG_DEADLOCK:Incorrect_Spec']
@@ -174,6 +176,7 @@ class  graph:
 			##done = 1
 			t = copy.deepcopy(Te[0])
 			if(len(Te)>1):
+				print "Stack :", M, s, Te[1:]
 				stack.append([M,s,Te[1:]])
 			if( len(((set(M) - set(self.TransitionPresets[t])) & set(self.TransPlace[t]))) != 0):
 				return ['STG is not safe']
@@ -203,6 +206,9 @@ class  graph:
 					M = copy.deepcopy(bucket[0])
 					s = copy.deepcopy(bucket[1])
 					Te = copy.deepcopy(bucket[2])
+					print "Pop: " , Te, M, self.P, "\n\n\n"
+					self.updatePlaces(M)
+					print "Update P :", self.P, "\n", s, "\n\n\n"
 				else:
 					done = 1
 				
