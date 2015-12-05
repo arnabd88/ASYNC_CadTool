@@ -33,3 +33,6 @@ self.
   					t5 : p5, p7
  10. markList    -> Marking
  11. labelS      -> dictionary corresponding to lambdaS(M)=s
+ 12. transExcite -> dictionary of the excitation of each transition and the corresponding signal
+					t1 : ['R', Q]
+					t2 : ['F', Q]

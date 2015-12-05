@@ -25,6 +25,9 @@ class  graph:
 		print "\n\nTransitionPresets========"
 		for i,v in self.TransitionPresets.iteritems():
 			print i, v
+		print "TransExcite=============\n"
+		for i,v in self.transExcite.iteritems():
+			print i, v
 
 	def CreateDSlpn(self, lpn):
 		print "============================="
@@ -38,6 +41,7 @@ class  graph:
 		self.internals = []
 		self.P = dict([])
 		self.T = dict([])
+		self.transExcite = dict([])
 		markList = []
 		graphStart = 0;
 		CommentList = [ i.split('#')[1]  for i in lpn if('#' in i)]
@@ -73,6 +77,12 @@ class  graph:
 				transPlaceList = line.split( );
 				##---- Check if the first one is the transition -----
 				if('+' in transPlaceList[0] or '-' in transPlaceList[0]):
+					## ----- create the transition excitation tag -------
+					if('+' in transPlaceList[0]):
+						self.transExcite[transPlaceList[0]] = ['R', transPlaceList[0].split('+')[0]]
+					elif('-' in transPlaceList[0]):
+						self.transExcite[transPlaceList[0]] = ['F', transPlaceList[0].split('-')[0]]
+					## --------------------------------------------------
 					if (transPlaceList[0] not in self.TransPlace.keys()):
 						self.TransPlace[transPlaceList[0]] = []
 					for i in range(1,len(transPlaceList)):
@@ -118,6 +128,9 @@ class  graph:
 				self.M.append(places);
 		print "Marking: ", self.M
 		return self.M
+	
+    
+		
 
 	def getEnabledTransitions(self):
 		Te = []
@@ -134,6 +147,16 @@ class  graph:
 		print "Enabled Transitions: ", Te
 		print "Self_T: ", self.T
 		return Te
+		
+	def updatePlaces(self, M):
+		mark = copy.deepcopy(M)
+		for place in self.P.keys():
+			self.P[place] = 0 
+			if(place in mark):
+				self.P[place] = 1
+				
+				
+		
 
 
 		
@@ -145,20 +168,73 @@ class  graph:
 		self.M0 = self.getMarking()
 		lambdaS = dict([])
 		M = tuple(self.M0) 
-		s = self.init_state 
+		s = copy.deepcopy(self.init_state)
 		Te = self.getEnabledTransitions()
 		stack = []
 		if(len(Te)==0):
 			return ['STG_DEADLOCK:Incorrect_Spec']
-		SET = [M]
-		lambdaS[M] = s 
+		SET = []
+		SET.append(M)
+		lambdaS[M] = copy.deepcopy(s) 
 		done = 0
+		delta = []
 		while(done == 0):
-			done = 1
-			t = Te[0]
+			##done = 1
+			t = copy.deepcopy(Te[0])
 			if(len(Te)>1):
 				stack.append([M,s,Te[1:]])
 			print "Dummy :", set(self.TransitionPresets[t]) | set(M)
 			print "Dummy :", self.TransitionPresets[t]
 			print "Dummy :", self.TransPlace[t]
+			if( len(((set(M) - set(self.TransitionPresets[t])) & set(self.TransPlace[t]))) != 0):
+				return ['STG is not safe']
+			Mi = tuple((set(M) - set(self.TransitionPresets[t]))   |  set(self.TransPlace[t]))
+			print "Mi :" , Mi
+			si = copy.deepcopy(s)
+			if(self.transExcite[t][0] == 'R'):
+				si[self.transExcite[t][1]] = '1'
+			elif(self.transExcite[t][0] == 'F'):
+				si[self.transExcite[t][1]] = '0'
+			##delta = set([M, t, Mi])
+			delta1 = [M, t, Mi]
+			delta.append(delta1)
+			print "Delta: ", delta
+			if(Mi not in SET):
+				SET.append(Mi)
+				lambdaS[Mi] = copy.deepcopy(si)
+				print "Lamda :", lambdaS
+				M = copy.deepcopy(Mi)
+				s = copy.deepcopy(si)
+				print "\n\n\n\\"
+				print "Before Update :", self.P, "\n\n\n"
+				self.updatePlaces(M)
+				print "Updated Places: ", self.P
+				Te = self.getEnabledTransitions()
+				if(len(Te)==0):
+					return ['STG_DEADLOCK:Incorrect_Spec']
+			else:
+				if(lambdaS[Mi] != si):
+					return ['Inconsistent State Assignment: Mi: '+Mi+'   1: '+lambdaS[Mi]+'   2:  '+si]
+				if(len(stack)!=0):
+					bucket = stack.pop()
+					M = copy.deepcopy(bucket[0])
+					s = copy.deepcopy(bucket[1])
+					Te = copy.deepcopy(bucket[2])
+				else:
+					done = 1
+				
+		result = ["Final SG is in this list", SET, delta, lambdaS]
+		return result
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
 	   	

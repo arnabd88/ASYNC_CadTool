@@ -22,5 +22,5 @@ print graph_name
 SG = graph.graph(graph_name[0])
 SG.CreateDSlpn(lpn)
 getSG = SG.find_SG()
-print "Message :", getSG
+print "Message :", getSG[0]
 #SG.disPlay()
