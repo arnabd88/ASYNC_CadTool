@@ -9,6 +9,28 @@ def trimleft( trimString ):
 		trimString = trimString[1:]
 	return trimString
 	
+def compStr( l1 ):
+	l2 = ''
+	for i in l1:
+		if(i=='0'):
+			l2 = l2+'1'
+		elif(i=='1'):
+			l2 = l2+'0'
+		else:
+			l2 = l2+'-'
+	return l2
+	
+def compList( l1 ):
+	l2 = []
+	for i in l1:
+		if(i=='1'):
+			l2.append('0')
+		elif(i=='0'):
+			l2.append('1')
+		else:
+			l2.append('-')
+	return l2
+	
 def writeSGspec( fsgSpec, sglist ):
 	##--------- Writes the SG spec output file ---------
 	SET     = copy.deepcopy(sglist[1])
