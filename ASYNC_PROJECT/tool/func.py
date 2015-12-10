@@ -9,6 +9,34 @@ def trimleft( trimString ):
 		trimString = trimString[1:]
 	return trimString
 	
+def concatList( l1 ):
+	l2 = ''
+	if(len(l1)!=0):
+		for i in l1:
+			l2 = l2+i
+	return l2
+	
+def trim( str1 ):
+	l2 = ''
+	for i in str1:
+		if(i!=' '):
+			l2 = l2+i
+	return l2
+	
+def trimList( list1 ):
+	l2 = []
+	for i in list1:
+		if(i != '' and i!='\n'):
+			l2.append(i)
+	return l2
+	
+def Celem(num1, num2, last):
+	if(num1==num2):
+		return num1
+	else:
+		return last
+		
+	
 def compStr( l1 ):
 	l2 = ''
 	for i in l1:
