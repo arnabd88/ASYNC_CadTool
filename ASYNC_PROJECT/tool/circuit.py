@@ -196,6 +196,13 @@ class circuit:
 				sigNext[i] = func.compStr(state[i])
 			
 		return sigNext
+	
+	def retState (self, hashDict):
+		retList = []
+		for i in self.allSignals:
+			retList.append(hashDict[i])
+		return retList
+			
 			
 				
 	def find_implSG( self, sgList, sgl):
@@ -215,34 +222,39 @@ class circuit:
 			#done = 1
 			failFlag = 0
 			#Te = self.getExcitedSignals(s)
-			print 'state :', s
-			print 'TE :', Te
+			#print 'state :', s
+			#print 'TE :', Te
 			t = Te.keys()[0]
 			del Te[t]
 			stack.append([s,Te])
 			si[t] = func.compStr(s[t])
 			tempTe = self.getExcitedSignals(si)
-			print 'Stack :', stack
-			print 'TempTe : ', tempTe
+			#print 'Stack :', stack
+			#print 'TempTe : ', tempTe
 			if(len(tempTe.keys())==0):
 				failFlag = 1
 			else:
 				for trans in Te:
 					if( trans not in self.inputs  and trans not in tempTe ): ## transition has been disabled by this choice
 						failFlag = 1
-			if(failFlag == 0 and [s,t,si] not in TRANSSET):
-				TRANSSET.append([s,t,si])
+			if(failFlag == 0 and [self.retState(s),t,self.retState(si)] not in TRANSSET):
+				TRANSSET.append([self.retState(s),t,self.retState(si)])
 				Te = tempTe
 				s = copy.deepcopy(si)
 			else:
 				if(failFlag==1):
-					failState[s].append([s,t,si])
+					if(tuple(self.retState(s)) not in failState):
+						failState[tuple(self.retState(s))]=[]						
+					failState[tuple(self.retState(s))].append([s,t,si])
 				if(len(stack)==0):
 					done = 1
 				else:
 					tempStack = stack.pop()
+					#print 'tempStack: ', tempStack
 					Te = tempStack[1]
 					s  = tempStack[0]
+					if(len(Te.keys())==0):
+						done = 1
 		result = ['Successful', TRANSSET, failState]
 		return result
 					
@@ -269,6 +281,14 @@ class circuit:
 		for pre, post in self.StateSequence.iteritems():
 			print pre+'   ', post
 		implSG = self.find_implSG( sgList, sgl );
+		print implSG[0]
+		print "============ FAILSTATE ================"
+		for i, v in implSG[2].iteritems():
+			print i, ': ==> :',v
+		print "============ TRANSSET ================="
+		for i in implSG[1]:
+			print i[0], '  :  ',i[1],'  :  ',i[2]
+
 		#for state in self.StateSequence.keys():
 		#	for i in range(0,len(self.extSignals)):
 		#		self.currentState[self.extSignals[i]] = state[i]
