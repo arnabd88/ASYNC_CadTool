@@ -59,12 +59,11 @@ class circuit:
 		FI = []
 		for i, v in self.circuitDict[sig].iteritems():
 			for j in v :
-				print 'from circuitDict :', j, v
+				#print 'from circuitDict :', j, v
 				for k in j:
 					if('~' in k):
-						print 'True'
+						#print 'True'
 						dum_sig = func.concatList(k.split('~')[1])
-						print 'DummySig: ', dum_sig
 					else:
 						dum_sig = k 
 					if(dum_sig not in FI):
@@ -77,7 +76,6 @@ class circuit:
 		start = 0
 		dictState = dict([])
 		stgList = []
-		print 'sgl : ', sgl
 		for line in sgl:
 			if('.SG' in line):
 				start = 1
@@ -90,7 +88,6 @@ class circuit:
 				if(stgList[0] not in dictState):
 					dictState[stgList[0]] = []
 				dictState[stgList[0]].append([stgList[1], stgList[2]])	
-		print 'dictstate :', dictState
 		return dictState
 			
 			
@@ -214,6 +211,7 @@ class circuit:
 		failState = dict([])
 		TRANSSET = []
 		Te = self.getExcitedSignals(s)
+		print 'FirstExcitedSignals :', Te
 		result = []
 		if(len(Te.keys())==0):
 			result = ['DeadLock']
@@ -224,6 +222,9 @@ class circuit:
 			#Te = self.getExcitedSignals(s)
 			#print 'state :', s
 			#print 'TE :', Te
+			print '============================================'
+			print 'State: ', self.retState(s)
+			print 'ExcitedSignals :', Te
 			t = Te.keys()[0]
 			del Te[t]
 			stack.append([s,Te])
@@ -231,18 +232,22 @@ class circuit:
 			tempTe = self.getExcitedSignals(si)
 			#print 'Stack :', stack
 			#print 'TempTe : ', tempTe
+			print 'Trans Taken: ', t
+			print 'Trans stacked: ', Te
 			if(len(tempTe.keys())==0):
 				failFlag = 1
 			else:
 				for trans in Te:
 					if( trans not in self.inputs  and trans not in tempTe ): ## transition has been disabled by this choice
 						failFlag = 1
+						print 'Fail Due to trans: ', t, Te
 			if(failFlag == 0 and [self.retState(s),t,self.retState(si)] not in TRANSSET):
 				TRANSSET.append([self.retState(s),t,self.retState(si)])
 				Te = tempTe
 				s = copy.deepcopy(si)
 			else:
 				if(failFlag==1):
+					print 'FailHere: ', self.retState(s),t,self.retState(si)
 					if(tuple(self.retState(s)) not in failState):
 						failState[tuple(self.retState(s))]=[]						
 					failState[tuple(self.retState(s))].append([s,t,si])
