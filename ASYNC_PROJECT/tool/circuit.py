@@ -227,20 +227,27 @@ class circuit:
 			print 'ExcitedSignals :', Te
 			t = Te.keys()[0]
 			del Te[t]
-			stack.append([s,Te])
+			si = copy.deepcopy(s)
+			if(len(Te)!=0):
+				stack.append([s,Te])
 			si[t] = func.compStr(s[t])
+			print 'Here si[t]', si[t]
+			print 'Here s[t]', s[t]
+			print 'Here s', s
+			print 'Here si', si
 			tempTe = self.getExcitedSignals(si)
-			#print 'Stack :', stack
+			prevtempTe = self.getExcitedSignals(s)
+			print 'HereStack :', stack
 			#print 'TempTe : ', tempTe
 			print 'Trans Taken: ', t
 			print 'Trans stacked: ', Te
 			if(len(tempTe.keys())==0):
 				failFlag = 1
 			else:
-				for trans in Te:
-					if( trans not in self.inputs  and trans not in tempTe ): ## transition has been disabled by this choice
+				for trans in prevtempTe:
+					if( trans not in self.inputs  and trans not in tempTe and trans!=t): ## transition has been disabled by this choice
 						failFlag = 1
-						print 'Fail Due to trans: ', t, Te
+						print 'Fail Due to trans: ', t, Te, prevtempTe
 			if(failFlag == 0 and [self.retState(s),t,self.retState(si)] not in TRANSSET):
 				TRANSSET.append([self.retState(s),t,self.retState(si)])
 				Te = tempTe
@@ -250,7 +257,10 @@ class circuit:
 					print 'FailHere: ', self.retState(s),t,self.retState(si)
 					if(tuple(self.retState(s)) not in failState):
 						failState[tuple(self.retState(s))]=[]						
-					failState[tuple(self.retState(s))].append([s,t,si])
+					if([s,t,si] in failState[tuple(self.retState(s))]):
+						print 'Repeat'
+					else:
+						failState[tuple(self.retState(s))].append([s,t,si])
 				if(len(stack)==0):
 					done = 1
 				else:
@@ -259,7 +269,9 @@ class circuit:
 					Te = tempStack[1]
 					s  = tempStack[0]
 					if(len(Te.keys())==0):
-						done = 1
+						print 'TempStack :', tempStack
+						print 'Because I was here'
+						#done = 1
 		result = ['Successful', TRANSSET, failState]
 		return result
 					
@@ -289,7 +301,7 @@ class circuit:
 		print implSG[0]
 		print "============ FAILSTATE ================"
 		for i, v in implSG[2].iteritems():
-			print i, ': ==> :',v
+			print i, ': ==> :',v, '\n'
 		print "============ TRANSSET ================="
 		for i in implSG[1]:
 			print i[0], '  :  ',i[1],'  :  ',i[2]
