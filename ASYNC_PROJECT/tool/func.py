@@ -65,7 +65,7 @@ def writeSGspec( fsgSpec, sglist ):
 	DELTA   = copy.deepcopy(sglist[2])
 	LAMBDAS = copy.deepcopy(sglist[3])
 	signalList = sglist[4]+sglist[5] 
-	print "Signals :", signalList
+	print "SignalsSpec :", signalList
 	
 	fsgSpec.write("Inputs :"+str(sglist[4])+"\n")
 	fsgSpec.write("Outputs :"+str(sglist[5])+"\n")
@@ -111,7 +111,7 @@ def writeSGfull( fsg, sglist ):
 	DELTA   = copy.deepcopy(sglist[2])
 	LAMBDAS = copy.deepcopy(sglist[3])
 	signalList = sglist[4]+sglist[5]+sglist[6]
-	print "Signals :", signalList
+	print "SignalsFull :", signalList
 	
 	fsg.write("Inputs :"+str(sglist[4])+"\n")
 	fsg.write("Outputs :"+str(sglist[5])+"\n")

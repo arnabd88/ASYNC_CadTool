@@ -35,6 +35,7 @@ class circuit:
 		self.prs = prs
 		print "======== Creating Circuit Structure ==========="
 		print "IO_LIST: " , input, output
+		self.internals=[]
 		self.circuitDict = self.getSignalDict(prs)
 		for line in prs:
 			print "LineExpr : ", line
@@ -47,7 +48,9 @@ class circuit:
 			elif('-' in line):
 				self.circuitDict[signalName]['RESET'].append(self.getExprList(line))
 			else:
-				self.circuitDict[signalName]['COMB'].append(self.getExprList(line))			
+				self.circuitDict[signalName]['COMB'].append(self.getExprList(line))		
+			if(signalName not in input  and signalName not in output and signalName not in self.internals):
+				self.internals.append(signalName)
 		for i,v in self.circuitDict.iteritems():
 			for j, k in v.iteritems():
 				print 'SignalDict  :', i, j, k
@@ -95,6 +98,8 @@ class circuit:
 			
 	def Evaluate(self,x,state):
 		FanInList = self.getFanInList(x)
+		#print 'FanInList:', FanInList
+		#print 'state:', state
 		FanInVal = dict([])
 		for i in FanInList:
 			FanInVal[i] = state[i]
@@ -181,25 +186,91 @@ class circuit:
 		result = comb_OrEval | func.Celem(set_OrEval , func.compStr(str(reset_OrEval)), int(self.currentState[x]))"""
 			
 			
-	def getExcitedSignals(self,state):
+	def getExcitedSignals(self,state,nonInput):
 		sigNext = dict([])
 		for sig in self.outSignals:
 			sigNext[sig] = self.Evaluate(sig,state)
 		for i in sigNext.keys():
 			if(sigNext[i]==state[i]):
 				del sigNext[i]
-		if(len(self.inputs)!=0):
-			for i in self.inputs:
-				sigNext[i] = func.compStr(state[i])
+		if(nonInput==1):
+			return sigNext
+		else:
+			if(len(self.inputs)!=0):
+				for i in self.inputs:
+					sigNext[i] = func.compStr(state[i])
 			
 		return sigNext
 	
 	def retState (self, hashDict):
 		retList = []
+		print 'allSignals:', self.allSignals
 		for i in self.allSignals:
 			retList.append(hashDict[i])
 		return retList
-			
+		
+	def extend_state( self, state ):
+		s = copy.deepcopy(state)
+		si = copy.deepcopy(s)
+		last_s = copy.deepcopy(s)
+		done = 0
+		ReachedExtendState = 0
+		stack = []
+		tempStack = []
+		result = dict([])
+		for i in self.outputs:	
+			result[i] = 0
+		Te = self.getExcitedSignals(s,1) ##passing 1 returns excitation on only outputs and internal signals
+		print 'Te-extend: ', Te
+		if(len(Te.keys())==0):
+			ReachedExtendState = 1
+			##result.append([
+		while(done != 1):
+			t = Te.keys()[0]
+			del Te[t]
+			si = copy.deepcopy(s)
+			if(len(Te.keys())!=0):
+				stack.append([s,Te])
+			si[t] = func.compStr(s[t])
+			print 'Arnab', si
+			tempTe = self.getExcitedSignals(si,1)
+			print 'tempte-Excitation', tempTe
+			ReachedExtendState = 0
+			outSig = ''
+			if(len(tempTe.keys())==0):
+				ReachedExtendState = 1
+				#result['noExcitation'] = 0
+				#result['extendState'] = copy.deepcopy(si)
+				result[t] = 1
+				done = 1
+			else:
+				for sig in self.outputs:
+					if(sig in tempTe.keys()):
+						ReachedExtendState = 1
+						outSig = sig
+						result[outSig] = 1
+				if(ReachedExtendState==1):
+					result[outSig] = 1
+					#result['noExcitation'] = 1
+				else:
+					s = copy.deepcopy(si)
+					Te = tempTe
+				if(ReachedExtendState==1  and len(stack)!=0):
+					tempStack = stack.pop()
+					si = tempStack[0]
+					Te = tempStack[1]
+					if(Te.keys()==0):
+						done = 1
+				elif(ReachedExtendState==1 and len(stack)==0):
+					done = 1
+		print '================= from extend state ======================'
+		print '------------------ state = ',state , '--------------------'
+		for i, v in result.iteritems() :
+			print i ,'   ', v
+		print '================ end of extend state ====================='
+		return result
+					
+				
 			
 				
 	def find_implSG( self, sgList, sgl):
@@ -210,37 +281,21 @@ class circuit:
 		stack = []
 		failState = dict([])
 		TRANSSET = []
-		Te = self.getExcitedSignals(s)
-		print 'FirstExcitedSignals :', Te
+		Te = self.getExcitedSignals(s,0)
 		result = []
 		if(len(Te.keys())==0):
 			result = ['DeadLock']
 			return result
 		while(done != 1):
-			#done = 1
 			failFlag = 0
-			#Te = self.getExcitedSignals(s)
-			#print 'state :', s
-			#print 'TE :', Te
-			print '============================================'
-			print 'State: ', self.retState(s)
-			print 'ExcitedSignals :', Te
 			t = Te.keys()[0]
 			del Te[t]
 			si = copy.deepcopy(s)
 			if(len(Te)!=0):
 				stack.append([s,Te])
 			si[t] = func.compStr(s[t])
-			print 'Here si[t]', si[t]
-			print 'Here s[t]', s[t]
-			print 'Here s', s
-			print 'Here si', si
-			tempTe = self.getExcitedSignals(si)
-			prevtempTe = self.getExcitedSignals(s)
-			print 'HereStack :', stack
-			#print 'TempTe : ', tempTe
-			print 'Trans Taken: ', t
-			print 'Trans stacked: ', Te
+			tempTe = self.getExcitedSignals(si,0)
+			prevtempTe = self.getExcitedSignals(s,0)
 			if(len(tempTe.keys())==0):
 				failFlag = 1
 			else:
@@ -285,26 +340,110 @@ class circuit:
 	def verifyCge( self, inputs, outputs, internals, init_state, sgList, sgl ):
 		self.inputs = inputs
 		self.outputs = outputs
-		self.outputs = internals
-		self.init_state = init_state
+		#self.internals = internals
+		print 'self:', self.internals
 		for i in internals:
+			if(i not in self.internals):
+				self.internals.append(i)
+		print 'self2:', self.internals
+		self.init_state = init_state
+		retResult = dict([])
+		for i in self.internals:
 			self.init_state[i] = '0' ## this is an assumption that initially all internal signals are zero
-		self.allSignals = inputs+outputs+internals
+		print 'New init state:', self.init_state
+		self.allSignals = inputs+outputs+self.internals
 		self.outputsExt = dict([])
 		self.extSignals = inputs+outputs
-		self.outSignals = outputs+internals
+		self.outSignals = outputs+self.internals
 		self.StateSequence = self.getStateSequence(sgl)
 		self.currentState = dict([])
-		for pre, post in self.StateSequence.iteritems():
-			print pre+'   ', post
+		implState = dict([])
+		#for pre, post in self.StateSequence.iteritems():
+		#	print 'PRE: ', pre+'   ', post
 		implSG = self.find_implSG( sgList, sgl );
 		print implSG[0]
 		print "============ FAILSTATE ================"
 		for i, v in implSG[2].iteritems():
 			print i, ': ==> :',v, '\n'
-		print "============ TRANSSET ================="
+		print "============ TRANSSET =================\n\n"
 		for i in implSG[1]:
-			print i[0], '  :  ',i[1],'  :  ',i[2]
+			print 'here: ', i
+		implState = dict([])
+		vecDict = dict([])
+		cgeDict = dict([])
+		implSet = implSG[1]
+		for i in implSG[1]:
+			#print i[0], '  :  ',i[1],'  :  ',i[2]
+			for j in range(0,len(self.allSignals)):
+				implState[self.allSignals[j]] = i[0][j]
+			print 'ImplState: ', implState
+			if(tuple(i[0]) not in vecDict):
+				vecDict[tuple(i[0])] = implState
+			if(len(self.getExcitedSignals(implState,1).keys())!=0):
+				retResult = self.extend_state(implState)
+				print 'Got external excitations:', implState
+				if( tuple(i[0]) not in cgeDict):
+					print 'noMatch :', retResult, tuple(i[0])
+					cgeDict[tuple(i[0])] = retResult
+			else:
+				retResult['noExcitation']=1
+				#for k in self.outputs:
+					#retResult[k] = implState[k]
+					#retResult[k] = 0
+			#print 'RetResult: ', retResult
+
+					
+		for i, v in cgeDict.iteritems():
+			print '================ CGE_DICT ======================'
+			print i, '   ', v
+			print '=============== end cge dict ==================='
+			
+		
+		for keyset, valset in self.StateSequence.iteritems():
+			s = keyset
+			sigTransList = []
+			print 'key:' , keyset, '\nval:', valset
+			for el in valset:
+				if('+' in el[0]):
+					sigTransList.append(el[0].split('+')[0])
+				elif('-' in el[0]):
+					sigTransList.append(el[0].split('-')[0])
+				else:
+					sigTransList.append(el[0])
+			print 'MakesigTransList:', sigTransList
+			print '\n state', keyset
+			for i in cgeDict.keys():
+				print '\ncgedictKeys', i
+				s = func.concatList(i)[0:len(keyset)]
+				print 'Concat string:', s
+				if(keyset == func.concatList(i)[0:len(keyset)]):
+					###---- Match the output signals ------
+					for sigout in self.outputs:
+						print '\n keyset', keyset, sigout, cgeDict[i]
+						if(sigout not in sigTransList  and sigout not in cgeDict[i]):
+							print 'Mark PassVacuous:',sigout
+							print 'sigTransList:', sigTransList
+						elif(sigout not in sigTransList and sigout in cgeDict[i]):
+							print 'Mark Fail', sigout
+							print 'cgeDict', cgeDict[i]
+							print 'sigTransList:', sigTransList
+						elif(sigout in sigTransList and sigout not in cgeDict[i]):
+							print 'Mark Fail', sigout, cgeDict[i]
+							print 'cgeDict', cgeDict[i]
+							print 'sigTransList:', sigTransList
+						elif(sigout in sigTransList and sigout in cgeDict[i]):
+							print 'Mark Pass', sigout
+							print 'sigTransList:', sigTransList
+				else:
+					print 'Unable to match', keyset
+					
+			
+		
+				
+			
+			
+			
+		
 
 		#for state in self.StateSequence.keys():
 		#	for i in range(0,len(self.extSignals)):
