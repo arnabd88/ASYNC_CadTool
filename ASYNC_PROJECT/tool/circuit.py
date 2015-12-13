@@ -19,7 +19,9 @@ class circuit:
 	def getSignalDict(self, prs):
 		circuitDict = dict([])
 		for line in prs:
+			print 'line:', line
 			line = func.trim(func.concatList(func.concatList(func.concatList(line.split('#')[0:]).split('[')[1]).split(']')[0]))
+			print 'line:', line
 			signalName = self.getSignalName(line)
 			circuitDict[signalName] = {'SET': [], 'RESET': [], 'COMB':[]}			
 		return circuitDict
