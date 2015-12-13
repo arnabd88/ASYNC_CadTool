@@ -361,7 +361,9 @@ class circuit:
 		#for pre, post in self.StateSequence.iteritems():
 		#	print 'PRE: ', pre+'   ', post
 		implSG = self.find_implSG( sgList, sgl );
-		print implSG[0]
+		print 'Result of impl:', implSG[0]
+		if(len(implSG)==1):
+			return 'DeadLock'
 		print "============ FAILSTATE ================"
 		for i, v in implSG[2].iteritems():
 			print i, ': ==> :',v, '\n'
