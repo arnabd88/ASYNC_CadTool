@@ -441,15 +441,79 @@ class circuit:
 				else:
 					print 'Unable to match', keyset
 					
-			
+		self.reverifyCge( inputs, outputs, internals, init_state, sgList, sgl)	
 		
 				
 			
-			
+	def reverifyCge( self, inputs, outputs, internals, init_state, sgList, sgl ):
+		fsg = open(sys.argv[1].split('.')[0]+'.sg', 'r+')
+		start = 0
+		specState = dict([])
+		sgfile = []
+		specStateDict = dict([])
+		specSignals = inputs+outputs+internals
+		outSignals = outputs+internals
+		cgeVerifyTag = dict([])
+		for line in fsg:
+			if('.SG' in line):
+				start = 1
+			elif('.end' in line):
+				start = 0
+			elif(start==1 and len(func.trimList(line.split(' ')))!=0):
+				sgfile.append(func.trimList(line.split(' ')))
+		for i in sgfile:
+			print 'hey',i[0]
+			if(i[0] not in specState):
+				specState[tuple(i[0])] = i[1]
+			else:
+				specState[tuple(i[0])].append(i[1])
+			tempState = dict([])
+			for j in range(0,len(specSignals)):
+				print 'Here: ', specSignals[j], j
+				tempState[specSignals[j]] = i[0][j]
+			specStateDict[tuple(i[0])] = tempState
+				
+		for i, v in specStateDict.iteritems():
+			print i, v,'\n'
+			ExcSignals = self.getStateEval(specSignals, v,1)
+			print 'ExcSignals: ', ExcSignals
+			for  out in outSignals:
+				excited = 0
+				##---- output not enabled in impl, output should not be enabled in spec as well
+				if(ExcSignals[out] == v[out]):
+					if((out+'+' not in specState[i]) and (out+'-' not in specState[i]) and (out not in specState[i])):
+						cgeVerifyTag[i] = 'PASS STATE'
+					else:
+						cgeVerifyTag[i] = 'FAIL STATE'
+				elif(ExcSignals[out] != v[out]):
+					if( ExcSignals[out]=='1' and (out+'+' not in specState[i])):
+						cgeVerifyTag[i] = 'FAIL STATE'
+					elif( ExcSignals[out]=='0' and (out+'-' not in specState[i])):
+						cgeVerifyTag[i] = 'FAIL STATE'
+					else:
+						cgeVerifyTag[i] = 'PASS STATE'
+				
+		
+		for i, v in cgeVerifyTag.iteritems():
+			print i, v
 			
 		
 
-		#for state in self.StateSequence.keys():
+	def getStateEval(self,specSignals, state,nonInput):
+		sigNext = dict([])
+		for sig in self.outSignals:
+			sigNext[sig] = self.Eval(sig,state,specSignals)
+		#for i in sigNext.keys():
+		#	if(sigNext[i]==state[i]):
+		#		del sigNext[i]
+		if(nonInput==1):
+			return sigNext
+		else:
+			if(len(self.inputs)!=0):
+				for i in self.inputs:
+					sigNext[i] = func.compStr(state[i])
+			
+		return sigNext	#for state in self.StateSequence.keys():
 		#	for i in range(0,len(self.extSignals)):
 		#		self.currentState[self.extSignals[i]] = state[i]
 			#print self.currentState
@@ -457,7 +521,57 @@ class circuit:
 		#		self.outputsExt = self.Evaluate(out)
 			
 			
-			
+	def Eval(self,x,state,extsignals):
+		FanInList = self.getFanInList(x)
+		FanInVal = dict([])
+		#for i in FanInList:
+		#	FanInVal[i] = state[i]
+		#	FanInVal['~'+i] = func.compStr(state[i])
+		for i in FanInList:
+			if( i in extsignals ):
+				FanInVal[i] = state[i]
+				FanInVal['~'+i] = func.compStr(state[i])
+			else:
+				temp = self.Eval(i, state, extsignals)
+				FanInVal[i] = temp
+				FanInVal['~'+i] = func.compStr(temp)
+		comb_OrEval = 0
+		set_OrEval = 0
+		reset_OrEval = 0
+		combAndEval = 0
+		setAndEval = 0
+		resetAndEval = 0
+		if(len(self.circuitDict[x]['COMB'])!=0):
+			combList = self.circuitDict[x]['COMB']
+			comb_OrEval = 0
+			for ckt in combList:
+				combAndEval = 1
+				for i in ckt:
+					combAndEval = combAndEval & int(FanInVal[i])
+				comb_OrEval = comb_OrEval | combAndEval
+		if(len(self.circuitDict[x]['SET'])!=0):
+			setList = self.circuitDict[x]['SET']
+			set_OrEval = 0
+			for  ckt in setList:
+				setAndEval = 1
+				for i in ckt:
+					setAndEval = setAndEval & int(FanInVal[i])
+				set_OrEval = set_OrEval | setAndEval
+		if(len(self.circuitDict[x]['RESET'])!=0):
+			resetList = self.circuitDict[x]['RESET']
+			reset_OrEval = 0
+			for ckt in resetList:
+				resetAndEval = 1
+				for i in ckt:
+					resetAndEval = resetAndEval & int(FanInVal[i])
+				reset_OrEval = reset_OrEval | resetAndEval
+		if(len(self.circuitDict[x]['RESET'])!=0 or len(self.circuitDict[x]['SET'])!=0): #indicates a c-element, which means it needs to be a primary output
+			result = func.Celem(set_OrEval, int(func.compStr(str(reset_OrEval))), int(state[x]))
+		else:
+			result = comb_OrEval 
+		#result = comb_OrEval | func.Celem(set_OrEval , int(func.compStr(str(reset_OrEval))), int(state[x]))
+		return str(result)
+					
 			
 			
 		
