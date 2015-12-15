@@ -441,18 +441,29 @@ class circuit:
 				else:
 					print 'Unable to match', keyset
 					
-		self.reverifyCge( inputs, outputs, internals, init_state, sgList, sgl)	
+		self.reverifyCge_and_stabeStates( inputs, outputs, internals, init_state, sgList, sgl)	
+		#find_stable_states( inputs, outputs, internals, init_state, sgList, sgl)
 		
-				
+	
+		
+	
 			
-	def reverifyCge( self, inputs, outputs, internals, init_state, sgList, sgl ):
+	def reverifyCge_and_stabeStates( self, inputs, outputs, internals, init_state, sgList, sgl ):
 		fsg = open(sys.argv[1].split('.')[0]+'.sg', 'r+')
 		start = 0
 		specState = dict([])
 		sgfile = []
 		specStateDict = dict([])
 		specSignals = inputs+outputs+internals
+		self.signalSpec = inputs+outputs+internals
 		outSignals = outputs+internals
+		intoutSignals = outputs+self.internals
+		onlyInternals = []
+		for i in self.internals:
+			if(i not in internals):
+				onlyInternals.append(i)
+		#onlyInternals = self.internals - internals
+		print 'Only Internals:', onlyInternals
 		cgeVerifyTag = dict([])
 		for line in fsg:
 			if('.SG' in line):
@@ -464,9 +475,9 @@ class circuit:
 		for i in sgfile:
 			print 'hey',i[0]
 			if(i[0] not in specState):
-				specState[tuple(i[0])] = i[1]
+				specState[tuple(i[0])] = [i[1],tuple(i[2])]
 			else:
-				specState[tuple(i[0])].append(i[1])
+				specState[tuple(i[0])].append([i[1],tuple(i[2])])
 			tempState = dict([])
 			for j in range(0,len(specSignals)):
 				print 'Here: ', specSignals[j], j
@@ -496,8 +507,128 @@ class circuit:
 		
 		for i, v in cgeVerifyTag.iteritems():
 			print i, v
-			
+		"""	if( v == 'FAIL STATE ):
+				setReturn = 1
+		if(setReturn==1):
+			return 'CGE Verification Failed"""
 		
+		################## Stable States ####################
+		##---- Get FanIn of each output and internal nodes -------------
+		FanInDict = dict([])
+		PathDict = dict([])
+		self.nodeSet = dict([])
+		self.circuitStruct = dict(dict([]))
+		for i,v in self.circuitDict.iteritems():
+			print i, v
+			self.circuitStruct[i] = {'SET':[]}
+			self.circuitStruct[i] = {'RESET':[]}
+			self.circuitStruct[i] = {'COMB':[]}
+			for x,y in v.iteritems():
+				if(x=='SET'):
+					tempDict = dict([])
+					for j in range(0,len(y)):
+						tempDict[i+'_set_'+str(j)] = y[j]
+						self.nodeSet[i+'_set_'+str(j)] = [i,y[j],'1']
+					self.circuitStruct[i]['SET'] = tempDict
+					print 'updateSet:', self.circuitStruct
+				if(x=='RESET'):
+					tempDict = dict([])
+					#circuitStruct[i] = {'RESET':[]}
+					for j in range(0,len(y)):
+						tempDict[i+'_reset_'+str(j)] = y[j]
+						self.nodeSet[i+'_reset_'+str(j)] = [i,y[j],'0']
+					print 'here:', self.circuitStruct
+					print 'here:', tempDict
+					self.circuitStruct[i]['RESET'] = tempDict
+					print 'updateReSet:', self.circuitStruct
+				if(x=='COMB'):
+					tempDict = dict([])
+					#circuitStruct[i] = {'COMB':[]}
+					for j in range(0,len(y)):
+						tempDict[i+'_comb_'+str(j)] = y[j]
+						self.nodeSet[i+'_comb_'+str(j)] = [i,y[j],'-']
+					self.circuitStruct[i]['COMB'] = tempDict
+					print 'updateComb:', self.circuitStruct
+		for i,v in self.circuitStruct.iteritems():
+			print 'hello', i, v, '\n'
+			
+		for i, v in self.nodeSet.iteritems():
+			print 'hi:', i, v, '\n'
+			
+		for i in self.nodeSet.keys():
+			print i, '  :  ', self.cktFanInList(i)
+				
+				
+				
+		for i in intoutSignals:
+			FanInDict[i] = self.cktFanInList(i)
+		print FanInDict
+		
+		evalDict = dict([])
+		stableState = dict([])
+		stableTran = dict([])
+		
+		for st, state in specStateDict.iteritems():
+			sigList = self.inputs+self.outputs+self.internals+self.nodeSet.keys()
+			for n in sigList:
+				temp = (st,n)
+				evalDict[tuple(temp)] = self.cktEval(n,state)
+			for i, v in evalDict.iteritems():
+				print 'Eval: ', i, '  ', v
+		"""modified = 0
+		nodes = onlyInternals+self.nodeSet.keys()
+		for n in nodes:
+			sig = ''
+			for i, v in specState.iteritems():
+				print 'Item: ', i, '  ', v
+				if('+' in v[0]):
+					sig = v[0].split('+')[0]
+				elif('-' in v[0]):
+					sig = v[0].split('-')[0]
+				else:
+					sig = v[0]
+				if(sig in outSignals):
+					s = specStateDict[i]
+					si = specStateDict[v[1]]
+					t = sig
+					if( exists_path(n, t) and must_prop(s,n,t) and not stable(s, si, n):
+						stable(s,si,n) = 1
+						modified = True"""
+		
+	def cktFanInList( self, sig):
+		fiList = []
+		if(sig in self.nodeSet): ## internaly created signal
+			FI = self.nodeSet[sig][1]
+			dum_sig = ''
+			for i in FI:
+				if('~' in i):
+					dum_sig = func.concatList(i.split('~')[1])
+				else:
+					dum_sig = i
+				if(dum_sig not in fiList):
+					fiList.append(dum_sig)
+		else:
+			for i, v in self.circuitStruct[sig].iteritems():
+				for j in v.keys():
+					if(j not in fiList):
+						fiList.append(j)
+		return fiList
+			
+			
+	'''def cktFanInList( self, sig ):
+		FI = []
+		for i, v in self.circuitDict[sig].iteritems():
+			for j in v :
+				#print 'from circuitDict :', j, v
+				for k in j:
+					if('~' in k):
+						#print 'True'
+						dum_sig = func.concatList(k.split('~')[1])
+					else:
+						dum_sig = k 
+					if(dum_sig not in FI):
+						FI.append(dum_sig)
+		return FI'''
 
 	def getStateEval(self,specSignals, state,nonInput):
 		sigNext = dict([])
@@ -513,12 +644,31 @@ class circuit:
 				for i in self.inputs:
 					sigNext[i] = func.compStr(state[i])
 			
-		return sigNext	#for state in self.StateSequence.keys():
-		#	for i in range(0,len(self.extSignals)):
-		#		self.currentState[self.extSignals[i]] = state[i]
-			#print self.currentState
-		#	for out in self.outputs:
-		#		self.outputsExt = self.Evaluate(out)
+		return sigNext	
+	
+	#def find_stable_states(self):
+		
+	
+	def cktEval(self,x,state):
+		fix_val = dict([])
+		if(x in self.circuitDict):
+			return self.Eval(x, state, self.signalSpec)
+		elif(x in self.nodeSet):
+			fi = self.nodeSet[x][1]
+		#fi_val = dict([])
+			for i in fi:
+				if('~' in i):
+					fix_val[i] = func.compStr(state[i.split('~')[1]])
+				else:
+					#print 'Fi_val: ', i, fix_val, state, type(fix_val), type(state)
+					fix_val[i] = state[i]
+
+
+			eval = 1
+			for i in fix_val.keys():
+				#print 'item: ', i, fix_val[i], type(fix_val[i])
+				eval = eval & int(fix_val[i])
+			return eval
 			
 			
 	def Eval(self,x,state,extsignals):
