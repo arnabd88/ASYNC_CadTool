@@ -492,21 +492,24 @@ class circuit:
 				excited = 0
 				##---- output not enabled in impl, output should not be enabled in spec as well
 				if(ExcSignals[out] == v[out]):
-					if((out+'+' not in specState[i]) and (out+'-' not in specState[i]) and (out not in specState[i])):
-						cgeVerifyTag[i] = 'PASS STATE'
+					if((out+'+' not in specState[i][0]) and (out+'-' not in specState[i]) and (out not in specState[i][0])):
+						cgeVerifyTag[i] = 'PASS STATE1'
 					else:
-						cgeVerifyTag[i] = 'FAIL STATE'
+						cgeVerifyTag[i] = 'FAIL STATE1'
 				elif(ExcSignals[out] != v[out]):
-					if( ExcSignals[out]=='1' and (out+'+' not in specState[i])):
-						cgeVerifyTag[i] = 'FAIL STATE'
-					elif( ExcSignals[out]=='0' and (out+'-' not in specState[i])):
-						cgeVerifyTag[i] = 'FAIL STATE'
+					if( ExcSignals[out]=='1' and (out+'+' not in specState[i][0])):
+						cgeVerifyTag[i] = 'FAIL STATE2'
+					elif( ExcSignals[out]=='0' and (out+'-' not in specState[i][0])):
+						cgeVerifyTag[i] = 'FAIL STATE3'+str(specState[i][0])+out
 					else:
-						cgeVerifyTag[i] = 'PASS STATE'
+						cgeVerifyTag[i] = 'PASS STATE2'
 				
+		for i,v in specState.iteritems():
+			print 'SpecstateItems: ', i, v
+		
 		
 		for i, v in cgeVerifyTag.iteritems():
-			print i, v
+			print specStateDict[i], i, v
 		"""	if( v == 'FAIL STATE ):
 				setReturn = 1
 		if(setReturn==1):
@@ -514,7 +517,7 @@ class circuit:
 		
 		################## Stable States ####################
 		##---- Get FanIn of each output and internal nodes -------------
-		FanInDict = dict([])
+		'''FanInDict = dict([])
 		PathDict = dict([])
 		self.nodeSet = dict([])
 		self.circuitStruct = dict(dict([]))
@@ -575,7 +578,16 @@ class circuit:
 				evalDict[tuple(temp)] = self.cktEval(n,state)
 			for i, v in evalDict.iteritems():
 				print 'Eval: ', i, '  ', v
-		"""modified = 0
+		for st,state in specStateDict.iteritems():
+			for n in nodeSet:
+				temp = (st,n)
+				stableState[tuple(temp)] = 0
+		for st, state in specState.iteritems():
+			for n in nodeSet:
+				temp = (st, n, state[1])
+				stableState[tuple(temp)] = 0
+		modified = 0
+		while(modified==0)		
 		nodes = onlyInternals+self.nodeSet.keys()
 		for n in nodes:
 			sig = ''
@@ -593,7 +605,7 @@ class circuit:
 					t = sig
 					if( exists_path(n, t) and must_prop(s,n,t) and not stable(s, si, n):
 						stable(s,si,n) = 1
-						modified = True"""
+						modified = 1'''
 		
 	def cktFanInList( self, sig):
 		fiList = []
